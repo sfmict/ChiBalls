@@ -1,0 +1,9 @@
+## Interface: 120005, 120001
+## Title: ChiBalls
+## Author: sfmict
+## Version: v1
+## IconAtlas: uf-chi-icon
+## SavedVariables: ChiBallsDB
+libs\LibStub\LibStub.lua
+libs\LibEditMode\embed.xml
+ChiBalls.lua
