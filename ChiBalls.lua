@@ -49,17 +49,22 @@ local function updateBars(stacks)
 end
 
 
-local function refreshHooks()
-	barFrame = nil
-	local cooldownIDs, cdID = C_CooldownViewer.GetCooldownViewerCategorySet(Enum.CooldownViewerCategory.TrackedBuff, false)
+local function getBar(category)
+	local cooldownIDs = C_CooldownViewer.GetCooldownViewerCategorySet(category, false)
 	for i, cooldownID in ipairs(cooldownIDs) do
 		local cooldownInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
 		if cooldownInfo.spellID == spellID then
-			cdID = cooldownID
-			break
+			return cooldownID
 		end
 	end
-	for i, f in ipairs({BuffIconCooldownViewer:GetChildren()}) do
+end
+
+
+local function refreshHooks()
+	barFrame = nil
+	local cdID, applications = getBar(Enum.CooldownViewerCategory.TrackedBuff) or getBar(Enum.CooldownViewerCategory.TrackedBar)
+
+	for f in BuffIconCooldownViewer.itemFramePool:EnumerateActive() do
 		if f._ChiBalls then
 			f.SetAlpha = nil
 			f.Applications.Applications.SetText = nil
@@ -68,6 +73,20 @@ local function refreshHooks()
 		end
 		if f.cooldownID == cdID then
 			barFrame = f
+			applications = f.Applications.Applications
+		end
+	end
+
+	for f in BuffBarCooldownViewer.itemFramePool:EnumerateActive() do
+		if f._ChiBalls then
+			f.SetAlpha = nil
+			f.Icon.Applications.SetText = nil
+			f._ChiBalls = nil
+			f:SetAlpha(1)
+		end
+		if f.cooldownID == cdID then
+			barFrame = f
+			applications = f.Icon.Applications
 		end
 	end
 
@@ -85,7 +104,7 @@ local function refreshHooks()
 	hooksecurefunc(barFrame, "SetAlpha", function(self)
 		setAlpha(self, alpha)
 	end)
-	hooksecurefunc(barFrame.Applications.Applications, "SetText", function(self, count)
+	hooksecurefunc(applications, "SetText", function(self, count)
 		updateBars(tonumber(count) or barFrame:GetAuraSpellInstanceID() and 1 or 0)
 	end)
 
@@ -174,6 +193,7 @@ C_Timer.After(0, function()
 	init(anchorFrame)
 
 	hooksecurefunc(BuffIconCooldownViewer, "RefreshLayout", refreshHooks)
+	hooksecurefunc(BuffBarCooldownViewer, "RefreshLayout", refreshHooks)
 	refreshHooks()
 
 	local defaultData = {
