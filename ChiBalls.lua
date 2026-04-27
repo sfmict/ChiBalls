@@ -13,7 +13,7 @@ local iconY = 5
 local dSize = 50
 local iconSize = 28
 local maxStacks = 4
-local bars, barFrame = {}
+local bars, barFrame, applications = {}
 
 for i = 1, maxStacks do
 	local bar = CreateFrame("StatusBar", nil, anchorFrame)
@@ -49,7 +49,7 @@ local function updateBars(stacks)
 end
 
 
-local function getBar(category)
+local function getCD(category)
 	local cooldownIDs = C_CooldownViewer.GetCooldownViewerCategorySet(category, false)
 	for i, cooldownID in ipairs(cooldownIDs) do
 		local cooldownInfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(cooldownID)
@@ -61,32 +61,27 @@ end
 
 
 local function refreshHooks()
-	barFrame = nil
-	local cdID, applications = getBar(Enum.CooldownViewerCategory.TrackedBuff) or getBar(Enum.CooldownViewerCategory.TrackedBar)
-
-	for f in BuffIconCooldownViewer.itemFramePool:EnumerateActive() do
-		if f._ChiBalls then
-			f.SetAlpha = nil
-			f.Applications.Applications.SetText = nil
-			f._ChiBalls = nil
-			f:SetAlpha(1)
-		end
-		if f.cooldownID == cdID then
-			barFrame = f
-			applications = f.Applications.Applications
-		end
+	if barFrame then
+		barFrame.SetAlpha = nil
+		barFrame = nil
+		applications.SetText = nil
+		applications = nil
 	end
 
+	local cdID = getCD(Enum.CooldownViewerCategory.TrackedBuff) or getCD(Enum.CooldownViewerCategory.TrackedBar)
 	for f in BuffBarCooldownViewer.itemFramePool:EnumerateActive() do
-		if f._ChiBalls then
-			f.SetAlpha = nil
-			f.Icon.Applications.SetText = nil
-			f._ChiBalls = nil
-			f:SetAlpha(1)
-		end
 		if f.cooldownID == cdID then
 			barFrame = f
 			applications = f.Icon.Applications
+		end
+	end
+
+	if not barFrame then
+		for f in BuffIconCooldownViewer.itemFramePool:EnumerateActive() do
+			if f.cooldownID == cdID then
+				barFrame = f
+				applications = f.Applications.Applications
+			end
 		end
 	end
 
@@ -97,7 +92,6 @@ local function refreshHooks()
 	if not show then return end
 
 	local alpha = anchorFrame.db.hideDefault and 0 or 1
-	barFrame._ChiBalls = true
 	barFrame:SetAlpha(alpha)
 
 	local setAlpha = getmetatable(barFrame).__index.SetAlpha
